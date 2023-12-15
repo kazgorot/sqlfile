@@ -8,6 +8,9 @@ import time
 log = logging.getLogger('sql_storage')
 
 
+db_path = 'test.sqlite'
+
+
 def _random_string(max_chars=90):
     return ''.join([random.choice(string.digits + string.ascii_letters)
                     for _ in range(random.randint(1, max_chars))])
@@ -32,7 +35,7 @@ def _check_rows(row, sql_row):
 
 
 def test_add_new_columns():
-    sq = Sq('test1.sqlite', replace=True)
+    sq = Sq(db_path, replace=True)
     sq.create_table(name='table1',
                     dtypes={'new_col_text': str, 'new_col_blob': bytes})
     sq.writerow('table1',
@@ -98,25 +101,25 @@ def test_add_new_columns():
 
 
 def test_context_manager():
-    with Sq('test1.sqlite', replace=True) as sq1:
+    with Sq(db_path, replace=True) as sq1:
         sq1.create_table('table1', dtypes={'raw': bytes})
         sq1.writerow('table1',
                      {'meta': '{"key1": "value1"}', 'raw': b'123'})
 
-    with (Sq('test1.sqlite', replace=False) as sq2):
+    with (Sq(db_path, replace=False) as sq2):
         res = sq2.db.execute('select * from table1 where rowid = 1').fetchone()
         assert {'meta': '{"key1": "value1"}', 'raw': b'123'} == dict(res), \
             dict(res)
 
 
 def test_generate_data1():
-    with Sq('test1.sqlite', replace=True) as sq:
+    with Sq(db_path, replace=True) as sq:
         sq.writerow('t123', dict({'field1': 'b1', 'raw': b'12345'}))
 
 
 def test_random_write_and_update():
     bulk_limit = 1000
-    with Sq('test1.sqlite', replace=True,
+    with Sq(db_path, replace=True,
             bulk_limit=bulk_limit) as sq:
         sq.create_table('t1',
                         header=['value', 'new', 'updated'],
@@ -132,7 +135,7 @@ def test_random_write_and_update():
 
 
 def test_create_table_with_dt():
-    with Sq('test1.sqlite', replace=True) as sq:
+    with Sq(db_path, replace=True) as sq:
         sq.create_table(name='tab1',
                         header=['a', 'b', 'c', 'd'],
                         dtypes={'a': int, 'b': bytes, 'c': float, 'd': str})
@@ -146,7 +149,7 @@ def test_create_table_with_dt():
 
 
 def test_add_rows_with_different_fields():
-    with Sq('test1.sqlite', replace=True) as sq:
+    with Sq(db_path, replace=True) as sq:
         sq.create_table(
             name='tab1',
             header=['a', 'b', 'c', 'd'],
@@ -166,14 +169,14 @@ def test_add_rows_with_different_fields():
         for row in rows:
             sq.writerow('tab1', row=row)
 
-    with Sq('test1.sqlite', replace=False) as sq:
+    with Sq(db_path, replace=False) as sq:
         for sql_row, expected_row in zip(
                 sq.iter_table(table_name='tab1'), rows):
             _check_rows(sql_row, expected_row)
 
 
 def test_multiple_tables1():
-    with Sq('test1.sqlite', replace=True) as sq:
+    with Sq(db_path, replace=True) as sq:
         same_header = ['a', 'b']
         sq.create_table(name='tab1',
                         header=same_header
@@ -199,15 +202,15 @@ def test_multiple_tables1():
 
 
 def test_write_update():
-    with Sq('test1.sqlite', replace=True) as sq1:
+    with Sq(db_path, replace=True) as sq1:
         sq1.create_table('tab1', dtypes={'a': int, 'b': int})
         sq1.writerow('tab1', row={'a': 1, 'b': 10})
         sq1.writerow('tab1', row={'a': 2, 'b': 20})
 
-    with Sq('test1.sqlite', append=True) as sq2:
+    with Sq(db_path, append=True) as sq2:
         sq2.writerow('tab1', row={'a': 3, 'b': 30})
 
-    with Sq('test1.sqlite', append=True) as sq3:
+    with Sq(db_path, append=True) as sq3:
         for row, exp in zip(sq3.iter_table('tab1'), [
             {'a': 1, 'b': 10},
             {'a': 2, 'b': 20},
@@ -222,7 +225,7 @@ def test_new_file_append_random():
     bulk_limit = random.randint(2, 100)
 
     def _append(tab, info=''):
-        with Sq('test.sqlite',
+        with Sq(db_path,
                 append=True,
                 bulk_limit=bulk_limit) as sq2:
             for i_ in range(n):
@@ -236,7 +239,7 @@ def test_new_file_append_random():
 
     log.info('init file')
     with Sq(
-            'test.sqlite',
+            db_path,
             replace=True,
             bulk_limit=bulk_limit) as sq1:
         for i in range(n):
@@ -257,18 +260,18 @@ def test_new_file_append_random():
     _append('tab2', info="final")
 
     log.info('check msgs')
-    with Sq('test.sqlite') as sq3:
+    with Sq(db_path) as sq3:
         for row, exp in zip(sq3.iter_table('tab1'), msgs['tab1']):
             assert row == exp, [row, exp]
 
     log.info('check msgs2')
-    with Sq('test.sqlite') as sq3:
+    with Sq(db_path) as sq3:
         for row, exp in zip(sq3.iter_table('tab2'), msgs['tab2']):
             assert row == exp, [row, exp]
 
 
 def test_read_csv():
-    sql_path = 'test.sqlite'
+    sql_path = db_path
     rows_n = random.randint(1, 1000)
     header = ["c_" + _random_string() for _ in range(random.randint(1, 90))]
     random.shuffle(header)
@@ -292,7 +295,7 @@ def test_read_csv():
 
 
 def test_iter_table():
-    with Sq(':memory:') as sq:
+    with Sq(db_path) as sq:
         msgs = [
             {'field1': 'value1_1', 'field2': 'value_1_2'},
             {'field1': 'value2_1', 'field2': 'value_2_2'},
@@ -322,7 +325,7 @@ def test_mark_bit():
     from collections import Counter
 
     n = 10
-    with Sq('test.db', replace=True) as sq:
+    with Sq(db_path, replace=True) as sq:
         cnt_bits = Counter()
         # msgs = [
         #     {'field1': '0', 'field2': 'value_1_2'},

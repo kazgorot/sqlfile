@@ -15,7 +15,8 @@ log = logging.getLogger('sql_storage')
 def _count_lines(path, chunk_size=0x10000):
     sz = Path(path).stat().st_size
     lines = 0
-    with open(path) as _f, tqdm(total=sz, desc='count lines') as bar:
+    with open(path) as _f, tqdm(total=sz,
+                                desc='count lines', leave=False) as bar:
         while True:
             data = _f.read(chunk_size)
             bar.update(len(data))
@@ -386,6 +387,10 @@ class Sq:
     def read_csv(self, table, path, has_header=True, append=False,
                  converter=None, count=None,
                  csv_opts: dict = None, dtypes=None):
+
+        if not path or not Path(path).exists():
+            raise IOError(f"No such file '{path}'")
+
         if not csv_opts:
             csv_opts = dict()
         with open(path) as f:
@@ -514,8 +519,4 @@ class Sq:
 
 
 if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--log-level', default='INFO')
-    args = parser.parse_args()
-    logging.basicConfig(level=args.log_level)
+    pass

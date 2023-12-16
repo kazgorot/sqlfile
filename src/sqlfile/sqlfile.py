@@ -8,7 +8,9 @@ from tqdm import tqdm
 __version__ = "0.1.0"
 status_field = 'DB_ROW_STATUS'
 
-
+logging.basicConfig(level='INFO',
+                        format='%(filename)s.%(funcName)s:[%(lineno)d] '
+                               '- %(levelname)-8s : %(message)s')
 log = logging.getLogger('sql_storage')
 
 
@@ -236,9 +238,12 @@ class Sq:
                 q = f'INSERT INTO [{table_name}] (`{fields_s}`) ' + \
                     f'VALUES({values_tags})'
                 log.debug(f"Executemany: {q}")
+
                 try:
-                    self.db.executemany(q,
-                                        self.buffer[table_name])
+                    self.db.executemany(
+                        q,
+                        self.buffer[table_name]
+                    )
                     self.db.commit()
                     self.buffer[table_name] = list()
                 except Exception as exc:
@@ -288,7 +293,7 @@ class Sq:
     def _flush_updates(self, finalize=False):
         drop_templates = list()
         for q_template in self.buffer_updates:
-            if (len(self.buffer_updates[q_template]) > self.bulk_limit) \
+            if (len(self.buffer_updates[q_template]) >= self.bulk_limit) \
                     or finalize:
                 # Trigger
                 self.db.executemany(
@@ -508,7 +513,7 @@ class Sq:
         '''
         try:
             log.debug(f"mark_duplicated_rows: `{q}`")
-            self.execute(
+            self.db.execute(
                 f"ALTER TABLE {tab} ADD COLUMN '{status_field}' INT DEFAULT 0")
         except sqlite3.OperationalError:
             pass

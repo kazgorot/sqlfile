@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     logging.basicConfig(level=args.log_level)
-    print(args)
+    log.info(f"{args=}")
 
     if args.action == 'counts':
         with Sq(args.sql_path, replace=False) as sq:

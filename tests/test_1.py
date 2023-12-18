@@ -412,11 +412,3 @@ def test_mark_bit():
 
 if __name__ == '__main__':
     logging.basicConfig(level='INFO')
-    # test_add_new_columns()
-    # test_context_manager()
-    # test_write_update()
-    #
-    # test_new_file_append_random()
-    # test_read_csv()
-    # test_iter_table()
-    test_mark_bit()

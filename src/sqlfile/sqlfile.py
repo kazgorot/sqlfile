@@ -1,11 +1,12 @@
 import sqlite3
 import logging
 import csv
+import typing
 from pathlib import Path
 from tqdm import tqdm
 
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 status_field = 'DB_ROW_STATUS'
 
 logging.basicConfig(level='INFO',
@@ -389,6 +390,10 @@ class Sq:
         self.executescript(f"DROP TABLE IF EXISTS [{to_table}];"
                            f"CREATE TABLE [{to_table}] AS {query};")
 
+    def read_iter(self, table: str, it: typing.Iterable):
+        for row in it:
+            self.writerow(table=table, row=row)
+
     def read_csv(self, table, path, has_header=True, append=False,
                  converter=None, count=None,
                  csv_opts: dict = None, dtypes=None):
@@ -422,7 +427,8 @@ class Sq:
                 self.create_table(name=table, header=header,
                                   append=append, dtypes=dtypes)
             for row in tqdm(c, total=total_lines, desc=f'load: {path}',
-                            unit='row', disable=self.silent):
+                            unit='row', disable=self.silent,
+                            leave=False):
 
                 if converter:
                     converter(row)

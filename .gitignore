@@ -1,2 +1,4 @@
 src/sqlfile.egg-info/
 **/__pycache__/
+**/*.sqlite
+**/*.db

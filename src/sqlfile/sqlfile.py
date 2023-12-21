@@ -15,7 +15,7 @@ logging.basicConfig(level='INFO',
 log = logging.getLogger('sql_storage')
 
 
-def _count_lines(path, chunk_size=0x10000):
+def count_lines(path, chunk_size=0x10000):
     sz = Path(path).stat().st_size
     lines = 0
     with open(path) as _f, tqdm(total=sz,
@@ -407,7 +407,7 @@ class Sq:
             total_lines = None
             if not self.silent:
                 if count is None:
-                    total_lines = _count_lines(path)
+                    total_lines = count_lines(path)
                 else:
                     total_lines = count
                 f.seek(0)
